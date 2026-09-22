@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_pill, rail, route_map %}
+{% block title %}{{ shipment.tracking_number }} &mdash; Operations{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap">
+
+    <div class="section-head">
+      <div>
+        <h1 class="mono" style="font-size:clamp(1.5rem,1.1rem+1.6vw,2.2rem)">
+          {{ shipment.tracking_number }}</h1>
+        <p style="margin:6px 0 0;color:var(--muted)">
+          {{ customer.name if customer else 'Unassigned' }}
+          {%- if customer and customer.company %} &middot; {{ customer.company }}{% endif %}
+          {%- if shipment.container_no %} &middot; <span class="mono">{{ shipment.container_no }}</span>{% endif %}
+        </p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        {{ status_pill(shipment) }}
+        <a class="btn btn-ghost btn-sm" href="/track/{{ shipment.tracking_number }}">
+          Customer view</a>
+        <a class="btn btn-ghost btn-sm" href="/admin">Back to book</a>
+      </div>
+    </div>
+
+    <div class="card">{{ rail(shipment) }}</div>
+
+    <div class="grid2" style="margin-top:16px;align-items:start">
+
+      <div class="card">
+        <h2 style="margin-bottom:6px">Add a checkpoint</h2>
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:18px">
+          The newest checkpoint becomes the shipment&rsquo;s status and the customer sees it immediately.</p>
+
+        <form method="post" class="stack">
+          <input type="hidden" name="action" value="add_event">
+          <label class="field"><span>Status</span>
+            <select name="status" id="ev-status" required>
+              {% for stage in STAGES %}{% set key = stage.key %}{% set label = stage.label %}
+                <option value="{{ key }}" {% if shipment.status == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+              {% for key, label in FLAG_STATES %}
+                <option value="{{ key }}" {% if shipment.status == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label class="field"><span>Location</span>
+            <input name="location" list="ports" required
+                   placeholder="Port, hub or waypoint"
+                   value="{{ shipment.dest_city }}">
+            <datalist id="ports">
+              {% for loc in LOCATIONS %}{% set city = loc.city %}{% set country = loc.country %}<option value="{{ city }}">{% endfor %}
+              <option value="Suez Canal"><option value="Panama Canal">
+              <option value="Strait of Malacca"><option value="Gibraltar">
+            </datalist>
+          </label>
+
+          <label class="field"><span>When it happened</span>
+            <input name="occurred_at" type="datetime-local"></label>
+
+          <label class="field"><span>Note for the customer</span>
+            <textarea name="note" placeholder="Departed origin terminal."></textarea></label>
+
+          <label class="field" id="signed-wrap" hidden><span>Signed for by</span>
+            <input name="signed_by" placeholder="Name of the person who took delivery"></label>
+
+          <button class="btn btn-accent btn-wide" type="submit">Add checkpoint</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-bottom:18px">Shipment details</h2>
+        <form method="post" class="stack">
+          <input type="hidden" name="action" value="update_details">
+          <label class="field"><span>Cargo</span>
+            <input name="cargo_type" value="{{ shipment.cargo_type or '' }}"></label>
+          <div class="grid3">
+            <label class="field"><span>Weight (kg)</span>
+              <input name="weight_kg" type="number" step="1" min="0"
+                     value="{{ shipment.weight_kg or 0 }}"></label>
+            <label class="field"><span>Pieces</span>
+              <input name="pieces" type="number" step="1" min="1"
+                     value="{{ shipment.pieces or 1 }}"></label>
+            <label class="field"><span>Cost (USD)</span>
+              <input name="cost_usd" type="number" step="0.01" min="0"
+                     value="{{ shipment.cost_usd or 0 }}"></label>
+          </div>
+          <label class="field"><span>Estimated arrival</span>
+            <input name="eta" type="date"
+                   value="{{ shipment.eta | head(10) if shipment.eta else '' }}"></label>
+          <label class="field"><span>Consignee</span>
+            <input name="recipient_name" value="{{ shipment.recipient_name or '' }}"></label>
+          <label class="field"><span>Consignee email</span>
+            <input name="recipient_email" type="email" value="{{ shipment.recipient_email or '' }}"></label>
+          <label class="field"><span>Delivery address</span>
+            <textarea name="recipient_addr">{{ shipment.recipient_addr or '' }}</textarea></label>
+          <label class="field"><span>Internal notes</span>
+            <textarea name="notes">{{ shipment.notes or '' }}</textarea></label>
+          <button class="btn btn-dark btn-wide" type="submit">Save details</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:16px;align-items:start">
+      <div>
+        <div class="mapframe">{{ route_map(shipment) }}</div>
+
+        <div class="card" style="margin-top:16px">
+          <h2 style="margin-bottom:6px">Report a position</h2>
+          <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">
+            {% if shipment.position_source == 'reported' %}
+              Customers are seeing a reported fix at
+              <span class="mono">{{ shipment.position_fmt }}</span>.
+              Clear both fields to go back to the schedule estimate.
+            {% else %}
+              Customers are seeing a position estimated from the schedule.
+              Enter a fix here and the map switches to it.
+            {% endif %}
+          </p>
+          <form method="post">
+            <input type="hidden" name="action" value="report_position">
+            <div class="grid2">
+              <label class="field"><span>Latitude</span>
+                <input name="current_lat" type="number" step="any" min="-90" max="90"
+                       placeholder="-90 to 90"
+                       value="{{ shipment.current_lat if shipment.current_lat !== null else '' }}"></label>
+              <label class="field"><span>Longitude</span>
+                <input name="current_lng" type="number" step="any" min="-180" max="180"
+                       placeholder="-180 to 180"
+                       value="{{ shipment.current_lng if shipment.current_lng !== null else '' }}"></label>
+            </div>
+            <button class="btn btn-dark btn-wide" type="submit"
+                    style="margin-top:14px">Save position</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-bottom:20px">Checkpoint history</h2>
+        {% if shipment.events %}
+        <ol class="timeline">
+          {% for e in shipment.events %}
+          <li class="{% if loop.first %}latest{% endif %} {% if e.is_flag %}flagged{% endif %}">
+            <div class="tl-top">
+              <b>{{ e.status_label }}</b>
+              <span class="tl-when">{{ e.occurred_fmt }}</span>
+            </div>
+            <div class="tl-where">{{ e.location }}{% if e.country %}, {{ e.country }}{% endif %}</div>
+            {% if e.note %}<p class="tl-note">{{ e.note }}</p>{% endif %}
+            <form method="post" style="margin-top:8px">
+              <input type="hidden" name="action" value="delete_event">
+              <input type="hidden" name="event_id" value="{{ e.id }}">
+              <button class="btn btn-ghost btn-sm" type="submit">Remove</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ol>
+        {% else %}
+          <p style="color:var(--muted);margin:0">No checkpoints yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // "Signed for by" only matters on delivery.
+  var sel = document.getElementById('ev-status');
+  var wrap = document.getElementById('signed-wrap');
+  function sync() { wrap.hidden = sel.value !== 'delivered'; }
+  sel.addEventListener('change', sync); sync();
+</script>
+{% endblock %}

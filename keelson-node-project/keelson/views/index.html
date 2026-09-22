@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import routes_map, ship_row, status_pill %}
+{% block title %}Keelson &mdash; track your freight{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="wrap">
+    <div class="herocard">
+      <img class="herocard-bg" src="/static/img/freight-land.webp"
+           alt="" width="1080" height="718" fetchpriority="high">
+
+      <div class="herocard-body">
+        <h1>Where is it right now?</h1>
+        <p class="lede">Enter a Keelson tracking number to see the route so far,
+           the last checkpoint it cleared, and the day it lands.</p>
+
+        <form class="trackform" action="/track" method="get" role="search">
+          <label class="sr" for="number">Tracking number</label>
+          <input id="number" name="number" class="mono" placeholder="KLN000000000"
+                 autocomplete="off" spellcheck="false" required
+                 pattern="[A-Za-z0-9 \-]{6,}">
+          <button class="btn btn-accent" type="submit">Track</button>
+        </form>
+
+        {% if sample %}
+        <p class="hint">Nothing to hand?
+          <button type="button" id="usesample" data-number="{{ sample }}">Use a sample number</button>
+        </p>
+        {% endif %}
+      </div>
+
+      {% if featured %}
+      <a class="herolive" href="/track/{{ featured.tracking_number }}">
+        {{ status_pill(featured) }}
+        <span class="herolive-id mono">{{ featured.tracking_number }}</span>
+        <span class="herolive-route">
+          {{ featured.origin_city }}
+          <span class="thread" style="--pct: {{ featured.percent }}%"></span>
+          {{ featured.dest_city }}
+        </span>
+        <span class="herolive-eta">
+          {%- if featured.days_left == 0 -%}Arriving today
+          {%- elif featured.days_left !== null and featured.days_left > 0 -%}
+            Arriving in {{ featured.days_left }} day{{ '' if featured.days_left == 1 else 's' }}
+          {%- elif featured.eta_fmt -%}Due {{ featured.eta_fmt }}{%- endif -%}
+        </span>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="ticker">
+  <div class="wrap">
+    <dl class="ticker-grid">
+      <div>
+        <dt>Under way right now</dt>
+        <dd>{{ stats.moving }}</dd>
+      </div>
+      <div>
+        <dt>Checkpoints logged this week</dt>
+        <dd>{{ stats.checkpoints_week }}</dd>
+      </div>
+      <div>
+        <dt>Ports and hubs</dt>
+        <dd>{{ stats.ports }}</dd>
+      </div>
+      <div>
+        <dt>Countries</dt>
+        <dd>{{ stats.countries }}</dd>
+      </div>
+    </dl>
+    <p class="ticker-note">Counted from live shipment records, not marketing figures.</p>
+  </div>
+</section>
+
+{% if live %}
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Moving right now</h2>
+      <p>{{ live|length }} of the shipments currently under way with us.</p>
+    </div>
+
+    <div class="mapframe" style="margin-bottom:16px">
+      {{ routes_map(hero_routes) }}
+    </div>
+
+    <div class="rows">
+      {% for s in live %}{{ ship_row(s) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Three ways to move it</h2>
+      <p>Every service is tracked on the same checkpoints.</p>
+    </div>
+    <div class="svc">
+
+      <article class="svc-card">
+        <img class="svc-photo" src="/static/img/freight-sea.webp"
+             alt="Container ship under way at sea, stacked with containers"
+             width="1080" height="708" loading="lazy">
+        <div class="svc-body">
+          <h3>Sea freight</h3>
+          <p>Full and shared container loads on scheduled port pairs.</p>
+          <span class="svc-meta">Typically 18&ndash;40 days port to port</span>
+        </div>
+      </article>
+
+      <article class="svc-card">
+        <img class="svc-photo" src="/static/img/freight-air.webp"
+             alt="Netted cargo pallet on the apron beside a freighter aircraft"
+             width="1179" height="793" loading="lazy">
+        <div class="svc-body">
+          <h3>Air freight</h3>
+          <p>Consolidated and express uplift for time-critical cargo.</p>
+          <span class="svc-meta">Typically 2&ndash;6 days airport to airport</span>
+        </div>
+      </article>
+
+      <article class="svc-card">
+        <img class="svc-photo" src="/static/img/freight-land.webp"
+             alt="Articulated lorry on an open highway at sunset"
+             width="1080" height="718" loading="lazy">
+        <div class="svc-body">
+          <h3>Land freight</h3>
+          <p>Road and rail linehaul, including the first and last mile.</p>
+          <span class="svc-meta">Typically 1&ndash;9 days door to door</span>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>What each status means</h2>
+      <p>The same six stages apply to sea, air and land.</p>
+    </div>
+    <div class="card">
+      <dl class="glossary">
+        {% for stage in STAGES %}{% set key = stage.key %}{% set label = stage.label %}
+        <div>
+          <dt><span class="dot {% if key == 'delivered' %}done{% else %}moving{% endif %}"></span>{{ label }}</dt>
+          <dd>{{ STATUS_HELP[key] }}</dd>
+        </div>
+        {% endfor %}
+      </dl>
+      <p class="glossary-more">
+        Three more statuses interrupt a journey rather than advance it &mdash;
+        <a href="/help#statuses">delayed, exception and cancelled</a>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>If you need us</h2>
+      <p>What to do when something isn&rsquo;t going to plan.</p>
+    </div>
+    <div class="grid3 assure">
+
+      <article class="card">
+        <h3>Something looks wrong</h3>
+        <p>Check the most recent checkpoint first &mdash; it usually explains the
+           hold. If it doesn&rsquo;t, send us the tracking number and we&rsquo;ll trace it.</p>
+        {% if COMPANY.claim_window %}
+          <p class="assure-line">Claims window: {{ COMPANY.claim_window }}</p>
+        {% endif %}
+        <a class="btn btn-ghost btn-sm" href="/help#problems">How claims work</a>
+      </article>
+
+      <article class="card">
+        <h3>Check the link is really ours</h3>
+        <p>Fake tracking pages are common in freight. We never ask for a payment
+           to release a shipment, and never ask for your password by email.</p>
+        {% if COMPANY.domain %}
+          <p class="assure-line">Our only domain: {{ COMPANY.domain }}</p>
+        {% endif %}
+        <a class="btn btn-ghost btn-sm" href="/help#security">How to check</a>
+      </article>
+
+      <article class="card">
+        <h3>Talk to a person</h3>
+        <p>The operations desk handles exceptions, customs queries and anything
+           a tracking page can&rsquo;t answer.</p>
+        {% if COMPANY.phone or COMPANY.hours %}
+          <p class="assure-line">
+            {% if COMPANY.phone %}{{ COMPANY.phone }}{% endif %}
+            {% if COMPANY.phone and COMPANY.hours %}<br>{% endif %}
+            {% if COMPANY.hours %}{{ COMPANY.hours }}{% endif %}
+          </p>
+        {% endif %}
+        <a class="btn btn-ghost btn-sm" href="/help#contact">Contact details</a>
+      </article>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

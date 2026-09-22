@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Page not found &mdash; Keelson{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap">
+    <div class="card empty">
+      <h2>That page isn&rsquo;t here</h2>
+      <p>The link may be out of date. Track a shipment by its number instead.</p>
+      <form class="trackform" action="/track" method="get"
+            style="max-width:440px;margin:0 auto">
+        <label class="sr" for="number">Tracking number</label>
+        <input id="number" name="number" class="mono" placeholder="KLN000000000" required>
+        <button class="btn btn-accent" type="submit">Track</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}
