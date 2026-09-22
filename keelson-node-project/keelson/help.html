@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}Help and contact &mdash; Keelson{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap">
+
+    <div class="section-head">
+      <div>
+        <h1 style="font-size:clamp(1.8rem,1.2rem+2vw,2.6rem)">Help and contact</h1>
+        <p style="margin:6px 0 0;color:var(--muted)">
+          Tracking, customs, claims and how to reach the operations desk.</p>
+      </div>
+    </div>
+
+    <nav class="jump">
+      <a href="#tracking">Tracking</a>
+      <a href="#statuses">Statuses</a>
+      <a href="#customs">Customs</a>
+      <a href="#problems">Problems and claims</a>
+      <a href="#security">Avoiding fake links</a>
+      <a href="#contact">Contact</a>
+    </nav>
+
+    <!-- ---------------------------------------------------------------- -->
+    <div class="card doc" id="tracking">
+      <h2>Tracking</h2>
+
+      <h3>What a Keelson tracking number looks like</h3>
+      <p>Three letters and nine digits, always beginning KLN &mdash; for example
+         <span class="mono">KLN482910375</span>. It appears on your booking
+         confirmation. Spaces and hyphens are ignored, so you can paste it in
+         however it was sent to you.</p>
+
+      <h3>My tracking page hasn&rsquo;t changed in days</h3>
+      <p>That is normal on long sea legs. A container crossing the Pacific may
+         go ten days between checkpoints, because there is nothing to report
+         until it reaches the next port. The estimated arrival date is the
+         figure to watch, not the number of updates.</p>
+
+      <h3>The arrival date moved</h3>
+      <p>Estimated arrival changes when a vessel misses a berth window, a
+         customs entry takes longer than usual, or weather reroutes a leg. When
+         it moves, the reason is written onto the checkpoint that caused it.</p>
+
+      <h3>Who else can see my shipment</h3>
+      <p>Anyone holding the tracking number can see the tracking page. That is
+         deliberate &mdash; it is how you share progress with a consignee without
+         giving them an account. The page shows the route, the status and the
+         checkpoints. It does not show your account details, the freight rate
+         you were quoted, or any other shipment. Treat the number as you would
+         a parcel reference: useful to share, not a secret, and not a password.</p>
+    </div>
+
+    <!-- ---------------------------------------------------------------- -->
+    <div class="card doc" id="statuses">
+      <h2>What each status means</h2>
+      <p>Six stages make up a normal journey, in this order.</p>
+      <dl class="glossary">
+        {% for stage in STAGES %}{% set key = stage.key %}{% set label = stage.label %}
+        <div>
+          <dt><span class="dot {% if key == 'delivered' %}done{% else %}moving{% endif %}"></span>{{ label }}</dt>
+          <dd>{{ STATUS_HELP[key] }}</dd>
+        </div>
+        {% endfor %}
+      </dl>
+
+      <h3>Three that interrupt a journey</h3>
+      <p>These hold a shipment at the last stage it actually completed, so you
+         can still see how far it got.</p>
+      <dl class="glossary">
+        {% for key, label in FLAG_STATES %}
+        <div>
+          <dt><span class="dot flag"></span>{{ label }}</dt>
+          <dd>{{ STATUS_HELP[key] }}</dd>
+        </div>
+        {% endfor %}
+      </dl>
+    </div>
+
+    <!-- ---------------------------------------------------------------- -->
+    <div class="card doc" id="customs">
+      <h2>Customs</h2>
+
+      <h3>Why it waits</h3>
+      <p>Customs authorities decide the order and speed of clearance, not the
+         carrier. A shipment sitting at <em>Customs clearance</em> has been
+         lodged correctly and is queued. Random inspections add days rather
+         than hours, and no carrier can shorten them.</p>
+
+      <h3>Duties and taxes</h3>
+      <p>The freight rate you were quoted covers carriage only. Import duty,
+         VAT and port charges are assessed at the destination and billed
+         separately. Who pays depends on the incoterm on your booking.</p>
+
+      <h3>What slows clearance most</h3>
+      <p>An invoice value that does not match the goods, a missing certificate
+         of origin, or a commodity code that contradicts the description. If we
+         spot one of these we raise an <em>Exception</em> and contact the
+         booking account rather than letting the entry fail.</p>
+
+      <h3>What we cannot carry</h3>
+      <p>{{ COMPANY.legal_name or 'Keelson' }} does not accept goods prohibited
+         by the carrier, the origin country or the destination country.
+         Dangerous goods need to be declared at booking, not on collection.
+         Ask the operations desk before booking anything you are unsure
+         about.</p>
+    </div>
+
+    <!-- ---------------------------------------------------------------- -->
+    <div class="card doc" id="problems">
+      <h2>Problems and claims</h2>
+
+      <h3>Before you call</h3>
+      <p>Open the tracking page and read the most recent checkpoint. It names
+         the location and, where there is one, the reason for a hold. That
+         answers most queries on its own.</p>
+
+      <h3>Raising it with us</h3>
+      <ol>
+        <li>Send the tracking number to the operations desk.</li>
+        <li>We trace it with the carrier or terminal handling that leg.</li>
+        <li>You get a written answer with a revised arrival date, or the reason
+            one cannot be given yet.</li>
+      </ol>
+
+      <h3>Damage, shortage or loss</h3>
+      <p>Note it on the delivery receipt at the time &mdash; a clean signature makes
+         a later claim much harder to pursue.
+         {% if COMPANY.claim_window %}Then tell us within
+           {{ COMPANY.claim_window }}.{% else %}Then tell us as soon as you can,
+           and keep the packaging until the claim is settled.{% endif %}</p>
+      {% if COMPANY.liability_cover or COMPANY.insurer %}
+      <p>Cargo liability is
+         {%- if COMPANY.liability_cover %} {{ COMPANY.liability_cover }}{% endif %}
+         {%- if COMPANY.insurer %}, underwritten by {{ COMPANY.insurer }}{% endif %}.</p>
+      {% endif %}
+      <p>Standard carrier liability is limited by weight and is usually far
+         below the commercial value of the goods, so insure cargo separately
+         when the value warrants it. We will tell you plainly when that applies
+         rather than after a loss.</p>
+    </div>
+
+    <!-- ---------------------------------------------------------------- -->
+    <div class="card doc" id="security">
+      <h2>Avoiding fake tracking links</h2>
+      <p>Freight attracts fraud, and convincing copies of carrier tracking
+         pages are common. Four things are always true of us.</p>
+      <ul class="checks">
+        <li><b>Check the web address before you type anything into it.</b>
+            {% if COMPANY.domain %}Our only address is {{ COMPANY.domain }}.
+            {% endif %}A lookalike spelling, a different ending or a link
+            shortener is not us.</li>
+        <li><b>We never ask for a payment to release a shipment.</b> No genuine
+            Keelson message will ask you to pay a fee to free cargo, clear
+            customs or avoid storage charges.</li>
+        <li><b>We never ask for your password, card or bank details by email or
+            message.</b> Not for verification, not for a refund, not ever.</li>
+        <li><b>A tracking number cannot change anything.</b> It shows progress.
+            It cannot redirect a shipment, alter an address or release cargo.</li>
+      </ul>
+      <p>If a message looks wrong, do not click it. Type the tracking number
+         into the tracking box on our own site instead, and tell the operations
+         desk what you received.</p>
+    </div>
+
+    <!-- ---------------------------------------------------------------- -->
+    {% set has_contact  = COMPANY.phone or COMPANY.email or COMPANY.hours %}
+    {% set has_identity = COMPANY.legal_name or COMPANY.company_no or COMPANY.vat_no
+                          or COMPANY.address or COMPANY.founded %}
+    {% set has_licence  = COMPANY.forwarder_licence or COMPANY.customs_licence
+                          or COMPANY.insurer or COMPANY.accreditations %}
+
+    <div class="card doc" id="contact">
+      <h2>Contact</h2>
+
+      {% if has_contact %}
+        <dl class="facts" style="margin:18px 0">
+          {% if COMPANY.phone %}
+            <div><dt>Operations desk</dt><dd>{{ COMPANY.phone }}</dd></div>{% endif %}
+          {% if COMPANY.email %}
+            <div><dt>Email</dt><dd>{{ COMPANY.email }}</dd></div>{% endif %}
+          {% if COMPANY.hours %}
+            <div><dt>Hours</dt><dd>{{ COMPANY.hours }}</dd></div>{% endif %}
+        </dl>
+      {% else %}
+        <p>The operations desk handles exceptions, customs queries and anything
+           a tracking page cannot answer. If you have a shipment with us, the
+           contact details are on your booking confirmation.</p>
+      {% endif %}
+
+      {% if has_identity %}
+        <h3>Who we are</h3>
+        <dl class="facts">
+          {% if COMPANY.legal_name %}
+            <div><dt>Registered name</dt><dd>{{ COMPANY.legal_name }}</dd></div>{% endif %}
+          {% if COMPANY.company_no %}
+            <div><dt>Company number</dt><dd>{{ COMPANY.company_no }}</dd></div>{% endif %}
+          {% if COMPANY.vat_no %}
+            <div><dt>VAT number</dt><dd>{{ COMPANY.vat_no }}</dd></div>{% endif %}
+          {% if COMPANY.address %}
+            <div><dt>Registered office</dt><dd>{{ COMPANY.address }}</dd></div>{% endif %}
+          {% if COMPANY.founded %}
+            <div><dt>Trading since</dt><dd>{{ COMPANY.founded }}</dd></div>{% endif %}
+        </dl>
+      {% endif %}
+
+      {% if has_licence %}
+        <h3>Licences and accreditations</h3>
+        <dl class="facts">
+          {% if COMPANY.forwarder_licence %}
+            <div><dt>Freight forwarding licence</dt>
+                 <dd>{{ COMPANY.forwarder_licence }}</dd></div>{% endif %}
+          {% if COMPANY.customs_licence %}
+            <div><dt>Customs broker licence</dt>
+                 <dd>{{ COMPANY.customs_licence }}</dd></div>{% endif %}
+          {% if COMPANY.insurer %}
+            <div><dt>Cargo insurer</dt><dd>{{ COMPANY.insurer }}</dd></div>{% endif %}
+        </dl>
+        {% if COMPANY.accreditations %}
+          <p style="margin-top:14px">{{ COMPANY.accreditations|join(' &middot; ')|safe }}</p>
+        {% endif %}
+        <p class="fineprint">We publish our licence numbers so you can verify
+           them with the issuing authority before you hand us cargo.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Sign in &mdash; Keelson{% endblock %}
+
+{% block content %}
+<section class="wrap split">
+  <div class="card">
+    <h1 style="font-size:clamp(1.6rem,1.2rem+1.4vw,2.1rem)">Sign in</h1>
+    <p style="color:var(--ink-2);margin-top:8px">Your shipments, checkpoints and booking history.</p>
+
+    <form method="post" class="stack" style="margin-top:22px">
+      {% if next %}
+        <input type="hidden" name="next" value="{{ next }}">
+      {% endif %}
+      <label class="field"><span>Email</span>
+        <input name="email" type="email" required autocomplete="email"
+               value="{{ form.email or '' }}"></label>
+      <label class="field"><span>Password</span>
+        <input name="password" type="password" required autocomplete="current-password"></label>
+      <button class="btn btn-dark btn-wide" type="submit">Sign in</button>
+    </form>
+
+    <p style="margin:18px 0 0;font-size:.92rem;color:var(--ink-2)">
+      No account yet? <a href="/register">Open one</a>.</p>
+
+    <div class="demo-note">
+      <div><b>Demo sign-ins for this build</b></div>
+      <div>Customer &mdash; wade@northbeamtrading.com / demo1234</div>
+      <div>Operations &mdash; admin@keelson.com / keelson123</div>
+    </div>
+  </div>
+
+  <div class="mapframe">
+    <div class="mapstage">{% include "partials/worldmap.html" %}</div>
+  </div>
+</section>
+{% endblock %}

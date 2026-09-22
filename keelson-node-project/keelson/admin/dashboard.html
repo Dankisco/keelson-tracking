@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Operations &mdash; Keelson{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap">
+
+    <div class="section-head">
+      <div>
+        <h1 style="font-size:clamp(1.8rem,1.2rem+2vw,2.6rem)">Operations</h1>
+        <p style="margin:6px 0 0;color:var(--muted)">Every shipment on the book.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn btn-ghost" href="/admin/customers">Customers</a>
+        <a class="btn btn-accent" href="/admin/shipments/new">Create shipment</a>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><b>{{ stats.total }}</b><span>Shipments</span></div>
+      <div class="tile accent"><b>{{ stats.moving }}</b><span>Moving</span></div>
+      <div class="tile"><b>{{ stats.delivered }}</b><span>Delivered</span></div>
+      <div class="tile {% if stats.attention %}alert{% endif %}">
+        <b>{{ stats.attention }}</b><span>Need attention</span></div>
+    </div>
+
+    <div class="filters" style="margin-top:26px">
+      <div class="chips">
+        <a class="chip {% if not status_filter %}on{% endif %}"
+           href="{{ 'admin_dashboard' | route }}{{ q | qs('q', true) }}">All<b>{{ stats.total }}</b></a>
+        {% for stage in STAGES %}{% set key = stage.key %}{% set label = stage.label %}
+          <a class="chip {% if status_filter == key %}on{% endif %}"
+             href="{{ 'admin_dashboard' | route }}?status={{ key }}{{ q | qs('q') }}">
+             {{ label }}<b>{{ counts[key] or 0 }}</b></a>
+        {% endfor %}
+        {% for key, label in FLAG_STATES %}
+          <a class="chip {% if status_filter == key %}on{% endif %}"
+             href="{{ 'admin_dashboard' | route }}?status={{ key }}{{ q | qs('q') }}">
+             {{ label }}<b>{{ counts[key] or 0 }}</b></a>
+        {% endfor %}
+      </div>
+      <form class="searchform" method="get" role="search">
+        {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+        <label class="sr" for="q">Search</label>
+        <input id="q" name="q" value="{{ q }}" placeholder="Number, port or customer">
+        <button class="btn btn-ghost btn-sm" type="submit">Search</button>
+      </form>
+    </div>
+
+    {% if shipments %}
+    <div class="tablecard">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tracking number</th><th>Customer</th><th>Route</th>
+            <th>Service</th><th>Progress</th><th>Status</th><th>Due</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for s in shipments %}
+          <tr>
+            <td><a class="mono" href="/admin/shipments/{{ s.id }}">
+                {{ s.tracking_number }}</a></td>
+            <td>{{ s.customer_name or 'Unassigned' }}</td>
+            <td>{{ s.origin_city }} &rarr; {{ s.dest_city }}</td>
+            <td>{{ s.service_label }}</td>
+            <td style="min-width:110px">
+              <span class="thread" style="--pct: {{ s.percent }}%;display:block;height:3px;
+                    background:var(--field-deep);border-radius:2px;position:relative">
+                <span style="position:absolute;inset:0 auto 0 0;width:{{ s.percent }}%;
+                      background:var(--accent);border-radius:2px"></span>
+              </span>
+            </td>
+            <td>{% from "partials/macros.html" import status_pill %}{{ status_pill(s) }}</td>
+            <td style="color:var(--muted)">{{ s.eta_fmt or '—' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="card empty">
+        <h2>Nothing matches</h2>
+        <p>Clear the filter to see the whole book.</p>
+        <a class="btn btn-ghost" href="/admin">Show all</a>
+      </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
